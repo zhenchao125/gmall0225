@@ -5,12 +5,13 @@ import java.util
 import java.util.Date
 
 import com.alibaba.fastjson.JSON
-import com.atguigu.gmall0225.common.util.GmallConstant
+import com.atguigu.gmall0225.common.util.{GmallConstant, MyESUtil}
 import com.atguigu.gmall0225.realtime.bean.StartupLog
 import com.atguigu.gmall0225.realtime.util.MyKafkaUtil
 import com.atguigu.gmall0225.realtime.util.com.atguigu.dw.gmall.realtime.util.RedisUtil
 import org.apache.spark.SparkConf
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.{DStream, InputDStream}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import redis.clients.jedis.Jedis
@@ -22,7 +23,7 @@ import redis.clients.jedis.Jedis
 object DAUApp {
     def main(args: Array[String]): Unit = {
         // 1. 从kafka消费数据(启动日志)
-        val conf = new SparkConf().setAppName("DAUApp").setMaster("local[2]")
+        val conf = new SparkConf().setAppName("DAUApp").setMaster("local[1]")
         val ssc = new StreamingContext(conf, Seconds(5))
         val sourceDStream: InputDStream[(String, String)] = MyKafkaUtil.getKafkaStream(ssc, GmallConstant.TOPIC_STARTUP)
         
@@ -33,6 +34,7 @@ object DAUApp {
         }
         // 2.2 写入之前先做过滤
         val filteredStartupLogDStream: DStream[StartupLog] = startupLogDStream.transform(rdd => {
+            
             val client: Jedis = RedisUtil.getJedisClient
             val uidSet: util.Set[String] = client.smembers(GmallConstant.REDIS_DAU_KEY + ":" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()))
             val uidSetBC: Broadcast[util.Set[String]] = ssc.sparkContext.broadcast(uidSet)
@@ -41,7 +43,7 @@ object DAUApp {
             //            val distinctedRDD: RDD[StartupLog] = rdd.distinct
             
             // 手动去重
-            val distinctedRDD = rdd
+            val distinctedRDD: RDD[StartupLog] = rdd
                 .map(log => (log.uid, log))
                 .groupByKey()
                 .flatMap {
@@ -60,18 +62,17 @@ object DAUApp {
             rdd.foreachPartition(startupLogIt => {
                 // redis客户端
                 val client: Jedis = RedisUtil.getJedisClient
-                startupLogIt.foreach(startupLog => {
+                val startupLogList = startupLogIt.toList
+                startupLogList.foreach(startupLog => {
                     // 写入到redis的set中
                     client.sadd(GmallConstant.REDIS_DAU_KEY + ":" + startupLog.logDate, startupLog.uid)
                 })
                 client.close()
-                
                 // 3. 写入到es中
-                //        startupLogDStream 写入到es中
-                
+                // startupLogDStream 写入到es中
+                MyESUtil.insertBulk(GmallConstant.DAU_INDEX, startupLogList)
             })
         })
-        
         
         ssc.start()
         ssc.awaitTermination()
