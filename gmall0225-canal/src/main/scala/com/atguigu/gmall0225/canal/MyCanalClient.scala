@@ -40,6 +40,5 @@ object MyCanalClient {
             }
         }
         
-        // 2. 上kafka写数据
     }
 }

@@ -5,6 +5,8 @@ package com.atguigu.gmall0225.common.util
   * Date 2019-07-22 14:41
   */
 object GmallConstant {
+    val TOPIC_ORDER: String = "gmall0225_order"
+    
     
     // shift + ctrl + u 大小写切换
     val TOPIC_STARTUP: String = "gmall0225_startup"

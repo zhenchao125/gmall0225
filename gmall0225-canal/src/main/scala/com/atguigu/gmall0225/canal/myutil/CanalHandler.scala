@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject
 import com.alibaba.google.common.base.CaseFormat
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.EventType
+import com.atguigu.gmall0225.common.util.GmallConstant
 
 /**
   * Author lzc
@@ -26,7 +27,7 @@ object CanalHandler {
                     
                 }
                 // 写入到kafka
-                println(obj)
+                MyKafkaSenderUtil.send(GmallConstant.TOPIC_ORDER, obj.toJSONString)
             }
         }
     }
