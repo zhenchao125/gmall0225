@@ -14,6 +14,7 @@
         <module>gmall0225-logger</module>
         <module>gmall0225-realtime</module>
         <module>gmall0225-publisher</module>
+        <module>gmall0225-canal</module>
     </modules>
 
     <!-- 由于子模块会用到 springboot, 而 springboot 必须使用这个父项目: spring-boot-starter-parent,
