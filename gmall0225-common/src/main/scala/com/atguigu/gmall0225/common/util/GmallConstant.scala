@@ -5,6 +5,8 @@ package com.atguigu.gmall0225.common.util
   * Date 2019-07-22 14:41
   */
 object GmallConstant {
+    val ORDER_INDEX: String = "gmall0225_order"
+    
     val TOPIC_ORDER: String = "gmall0225_order"
     
     

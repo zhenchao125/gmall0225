@@ -36,7 +36,8 @@ object MyCanalClient {
                         CanalHandler.handle(entry.getHeader.getTableName, rowDataList, rowChange.getEventType)
                     }
                 }
-                
+            }else{
+                Thread.sleep(2000)
             }
         }
         
