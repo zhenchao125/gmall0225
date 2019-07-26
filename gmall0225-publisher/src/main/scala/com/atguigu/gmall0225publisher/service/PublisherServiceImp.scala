@@ -104,4 +104,95 @@ class PublisherServiceImp extends PublisherService {
         }
         map.toMap
     }
+    
+    /**
+      * 返回指定日期的订单的总额
+      *
+      * @param date
+      * @return
+      */
+    override def getOrderTotal(date: String): Double = {
+        val dsl =
+            s"""
+               |{
+               |  "query": {
+               |    "bool": {
+               |      "filter": {
+               |        "term": {
+               |          "createDate": "$date"
+               |        }
+               |      }
+               |    }
+               |  },
+               |  "aggs": {
+               |    "sum_totalAmount": {
+               |      "sum": {
+               |        "field": "totalAmount"
+               |      }
+               |    }
+               |  }
+               |}
+             """.stripMargin
+    
+        val search: Search = new Search.Builder(dsl)
+            .addIndex(GmallConstant.ORDER_INDEX)
+            .addType("_doc")
+            .build()
+        
+        val result: SearchResult = esClinet.execute(search)
+        result.getAggregations.getSumAggregation("sum_totalAmount").getSum
+    }
+    
+    /**
+      * 返回指定日期每小时的订单额度
+      *
+      * @param date
+      * @return
+      */
+    override def getOrderHourTotal(date: String): mutable.Map[String, Double] = {
+        val dsl =
+            s"""
+               |{
+               |  "query": {
+               |    "bool": {
+               |      "filter": {
+               |        "term": {
+               |          "createDate": "$date"
+               |        }
+               |      }
+               |    }
+               |  },
+               |  "aggs": {
+               |    "groupby_createHour": {
+               |      "terms": {
+               |        "field": "createHour",
+               |        "size": 24
+               |      },
+               |      "aggs": {
+               |        "sum_hour_total": {
+               |          "sum": {
+               |            "field": "totalAmount"
+               |          }
+               |        }
+               |      }
+               |    }
+               |  }
+               |}
+             """.stripMargin
+    
+        val search: Search = new Search.Builder(dsl)
+            .addIndex(GmallConstant.ORDER_INDEX)
+            .addType("_doc")
+            .build()
+        val result: SearchResult = esClinet.execute(search)
+        val buckets: util.List[TermsAggregation#Entry] =
+            result.getAggregations.getTermsAggregation("groupby_createHour").getBuckets
+        
+        val map = mutable.Map[String, Double]()
+        import scala.collection.JavaConversions._
+        for(bucket <- buckets){
+            map += bucket.getKey -> bucket.getSumAggregation("sum_hour_total").getSum
+        }
+        map
+    }
 }
