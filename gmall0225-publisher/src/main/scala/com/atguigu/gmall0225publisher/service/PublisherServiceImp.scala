@@ -133,7 +133,7 @@ class PublisherServiceImp extends PublisherService {
                |  }
                |}
              """.stripMargin
-    
+        
         val search: Search = new Search.Builder(dsl)
             .addIndex(GmallConstant.ORDER_INDEX)
             .addType("_doc")
@@ -179,7 +179,7 @@ class PublisherServiceImp extends PublisherService {
                |  }
                |}
              """.stripMargin
-    
+        
         val search: Search = new Search.Builder(dsl)
             .addIndex(GmallConstant.ORDER_INDEX)
             .addType("_doc")
@@ -190,9 +190,73 @@ class PublisherServiceImp extends PublisherService {
         
         val map = mutable.Map[String, Double]()
         import scala.collection.JavaConversions._
-        for(bucket <- buckets){
+        for (bucket <- buckets) {
             map += bucket.getKey -> bucket.getSumAggregation("sum_hour_total").getSum
         }
         map
+    }
+    
+    override def getSaleDetalAndAggregateResultByField(date: String, keyWord: String, startPage: Int, size: Int, aggField: String, aggSize: Int): Map[String, Any] = {
+        val dsl =
+            s"""
+               |{
+               |  "from": ${(startPage - 1) * size},
+               |  "size": $size,
+               |  "query": {
+               |    "bool": {
+               |      "filter": {
+               |        "term": {
+               |          "dt": "$date"
+               |        }
+               |      },
+               |      "must": [
+               |        {"match": {
+               |          "sku_name": "$keyWord"
+               |        }}
+               |      ]
+               |    }
+               |  },
+               |  "aggs": {
+               |    "groupby_$aggField": {
+               |      "terms": {
+               |        "field": "$aggField",
+               |        "size": $aggSize
+               |      }
+               |    }
+               |  }
+               |}
+             """.stripMargin
+        val search: Search = new Search.Builder(dsl)
+            .addIndex(GmallConstant.SALE_DETAIL_INDEX)
+            .addType("_doc")
+            .build()
+        val result: SearchResult = esClinet.execute(search)
+        // 返回一个map, 这个map有3个键值对: "detail":List[Map[String, Any]]     , "aggMap": Map[String, Double], total: 200
+        // "detail": List(Map("user_id"->"103", ....)),  "aggMap" : Map("F"->100, "M->200")      性别
+        // "detail": List(Map("user_id"->"103", ....)),  "aggMap" : Map("20"->100, "21->200", "22" -> 100)      年龄
+        var resultMap = Map[String, Any]()
+        // 1. 先获得命中的总数
+        resultMap += "total" -> result.getTotal
+        
+        // 2. 得到详情数据
+        var detailList: List[Map[String, Any]] = List[Map[String, Any]]() // 储存所有的详细
+        import scala.collection.JavaConversions._
+        val hits: util.List[SearchResult#Hit[util.HashMap[String, Any], Void]] = result.getHits(classOf[util.HashMap[String, Any]])
+        for (hit <- hits) {
+            val source: util.HashMap[String, Any] = hit.source
+            detailList :+= source.toMap
+        }
+        resultMap += "detail" -> detailList
+        
+        // 3. 得到聚合数据
+        val buckets: util.List[TermsAggregation#Entry] = result.getAggregations
+            .getTermsAggregation(s"groupby_$aggField").getBuckets
+        
+        var aggMap = Map[String, Long]()
+        for (bucket <- buckets) {
+            aggMap += bucket.getKey -> bucket.getCount
+        }
+        resultMap += "aggMap" -> aggMap
+        resultMap
     }
 }
