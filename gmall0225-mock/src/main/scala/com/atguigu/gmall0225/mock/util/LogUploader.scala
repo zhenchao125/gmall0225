@@ -12,7 +12,7 @@ object LogUploader {
     def sendLog(log: String): Unit = {
         try {
             // 1. 日志服务器的地址
-            val logUrl = new URL("http://hadoop201:80/log")
+            val logUrl = new URL("http://192.168.2.201:80/log")
             // 2. 得到一个 HttpURLConnection
             val conn: HttpURLConnection = logUrl.openConnection().asInstanceOf[HttpURLConnection]
             // 3. 设置请求方法(上传数据一般使用 post 请求)

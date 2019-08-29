@@ -1,29 +1,22 @@
 package com.atguigu.gmall0225.realtime.bean
 
-import java.text.SimpleDateFormat
-
-case class OrderInfo(area: String,
-                     var consignee: String, // 收件人
-                     orderComment: String,
-                     var consigneeTel: String,
-                     operateTime: String,
-                     orderStatus: String,
-                     paymentWay: String,
-                     userId: String,
-                     imgUrl: String,
-                     totalAmount: Double,
-                     expireTime: String,
-                     deliveryAddress: String,
-                     createTime: String,
-                     trackingNo: String,
-                     parentOrderId: String,
-                     outTradeNo: String,
-                     id: String,
-                     tradeBody: String) {
-    
-    private val date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(createTime)
-    val createDate: String = new SimpleDateFormat("yyyy-MM-dd").format(date)
-    val createHour: String = new SimpleDateFormat("HH").format(date)
-    val createHourMinute: String = new SimpleDateFormat("HH:mm").format(date)
-}
-
+case class OrderInfo(id: String,
+                     province_id: String,
+                     var consignee: String,
+                     order_comment: String,
+                     var consignee_tel: String,
+                     order_status: String,
+                     payment_way: String,
+                     user_id: String,
+                     img_url: String,
+                     total_amount: Double,
+                     expire_time: String,
+                     delivery_address: String,
+                     create_time: String,
+                     operate_time: String,
+                     tracking_no: String,
+                     parent_order_id: String,
+                     out_trade_no: String,
+                     trade_body: String,
+                     var create_date: String,
+                     var create_hour: String)

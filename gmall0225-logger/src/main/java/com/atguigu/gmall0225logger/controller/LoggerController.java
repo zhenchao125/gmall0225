@@ -41,7 +41,7 @@ public class LoggerController {
         JSONObject obj = JSON.parseObject(logWithTS);
         // 启动日志   事件日志
         String topic = GmallConstant.TOPIC_STARTUP();
-        if(obj.getString("type").equals("event")){
+        if(obj.getString("logType").equals("event")){
             topic = GmallConstant.TOPIC_EVENT();
         }
         template.send(topic, logWithTS);
