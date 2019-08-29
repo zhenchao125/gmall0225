@@ -26,6 +26,7 @@ object AlertApp {
         
         ssc.start()
         ssc.awaitTermination()
+        
     }
 }
 
