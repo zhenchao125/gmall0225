@@ -33,26 +33,27 @@ object MyESUtil {
         client.close()
     }
     
-    // 插入多条数据
-    def insertBulk(indexName: String, sources: Iterable[Any]):Unit ={
+    // 插入多条数据 sources:   Iterable[(id, caseClass)] 或者 Iterable[caseClass]
+    def insertBulk(indexName: String, sources: Iterator[Any]): Unit = {
         if (sources.isEmpty) return
         
         val client: JestClient = getESClient
         val bulkBuilder = new Bulk.Builder()
             .defaultIndex(indexName)
             .defaultType("_doc")
-        sources.foreach(source => {  // 把所有的source变成action添加buck中
-            bulkBuilder.addAction(new Index.Builder(source).build())
-        })
-        
+        sources.foreach { // 把所有的source变成action添加buck中
+            //传入的是值是元组, 第一个表示id
+            case (id: String, data) => bulkBuilder.addAction(new Index.Builder(data).id(id).build())
+            // 其他类型 没有id, 将来省的数据会自动生成默认id
+            case data => bulkBuilder.addAction(new Index.Builder(data).build())
+        }
         client.execute(bulkBuilder.build())
         closeClient(client)
-        
     }
     
     def main(args: Array[String]): Unit = {
-//        insertSingle("user", User("a", 20))
-        insertBulk("user", Iterable(User("aa", 20), User("bb", 30)))
+        //        insertSingle("user", User("a", 20))
+        insertBulk("user", Iterator(User("aa", 20), User("bb", 30)))
         
     }
     

@@ -14,12 +14,12 @@ object OrderApp {
     def main(args: Array[String]): Unit = {
         
         //1 . 从kafka消费数据
-        val conf = new SparkConf().setMaster("local[2]").setAppName("OrderApp")
-        val ssc = new StreamingContext(conf, Seconds(2))
+        val conf: SparkConf = new SparkConf().setMaster("local[2]").setAppName("OrderApp")
+        val ssc: StreamingContext = new StreamingContext(conf, Seconds(2))
         val sourceDStream: InputDStream[(String, String)] = MyKafkaUtil.getKafkaStream(ssc, GmallConstant.TOPIC_ORDER)
         val orerInfoDStream: DStream[OrderInfo] = sourceDStream.map { // 对数据格式做调整
             case (_, value) => {
-                val orderInfo = JSON.parseObject(value, classOf[OrderInfo]) // 李小名 => 李**
+                val orderInfo: OrderInfo = JSON.parseObject(value, classOf[OrderInfo])
                 orderInfo.consignee = orderInfo.consignee.substring(0, 1) + "**" // 李小名 => 李**
                 orderInfo.consignee_tel = orderInfo.consignee_tel.substring(0, 3) +
                     "****" + orderInfo.consignee_tel.substring(7, 11)
